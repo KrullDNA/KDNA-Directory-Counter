@@ -374,6 +374,641 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 		);
 
 		$this->end_controls_section();
+
+		$this->kdna_register_animation_section();
+		$this->kdna_register_icon_section();
+		$this->kdna_register_style_sections();
+	}
+
+	/**
+	 * Animation controls (Content tab).
+	 */
+	protected function kdna_register_animation_section() {
+		$this->start_controls_section(
+			'kdna_section_animation',
+			array(
+				'label' => esc_html__( 'Animation', 'kdna-directory-counter' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
+			)
+		);
+
+		$this->add_control(
+			'enable_animation',
+			array(
+				'label'        => esc_html__( 'Animate count', 'kdna-directory-counter' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'label_on'     => esc_html__( 'On', 'kdna-directory-counter' ),
+				'label_off'    => esc_html__( 'Off', 'kdna-directory-counter' ),
+				'return_value' => 'yes',
+				'default'      => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'animation_duration',
+			array(
+				'label'      => esc_html__( 'Duration (seconds)', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 's' ),
+				'range'      => array(
+					's' => array(
+						'min'  => 0.5,
+						'max'  => 5,
+						'step' => 0.1,
+					),
+				),
+				'default'    => array(
+					'unit' => 's',
+					'size' => 2,
+				),
+				'condition'  => array(
+					'enable_animation' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'animation_easing',
+			array(
+				'label'     => esc_html__( 'Easing', 'kdna-directory-counter' ),
+				'type'      => \Elementor\Controls_Manager::SELECT,
+				'default'   => 'easeOutExpo',
+				'options'   => array(
+					'linear'        => esc_html__( 'Linear', 'kdna-directory-counter' ),
+					'easeOutExpo'   => esc_html__( 'Ease out expo', 'kdna-directory-counter' ),
+					'easeInOutQuad' => esc_html__( 'Ease in out quad', 'kdna-directory-counter' ),
+					'easeOutCubic'  => esc_html__( 'Ease out cubic', 'kdna-directory-counter' ),
+				),
+				'condition' => array(
+					'enable_animation' => 'yes',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Icon controls (Content tab).
+	 */
+	protected function kdna_register_icon_section() {
+		$this->start_controls_section(
+			'kdna_section_icon',
+			array(
+				'label' => esc_html__( 'Icon', 'kdna-directory-counter' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
+			)
+		);
+
+		$this->add_control(
+			'icon',
+			array(
+				'label'       => esc_html__( 'Icon', 'kdna-directory-counter' ),
+				'type'        => \Elementor\Controls_Manager::ICONS,
+				'label_block' => true,
+				'default'     => array(),
+			)
+		);
+
+		$this->add_control(
+			'icon_position',
+			array(
+				'label'   => esc_html__( 'Icon position', 'kdna-directory-counter' ),
+				'type'    => \Elementor\Controls_Manager::CHOOSE,
+				'default' => 'before',
+				'options' => array(
+					'before' => array(
+						'title' => esc_html__( 'Before number', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-h-align-left',
+					),
+					'after'  => array(
+						'title' => esc_html__( 'After number', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-h-align-right',
+					),
+					'above'  => array(
+						'title' => esc_html__( 'Above number', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-v-align-top',
+					),
+				),
+				'toggle'    => false,
+				'condition' => array(
+					'icon[value]!' => '',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Style tab sections.
+	 */
+	protected function kdna_register_style_sections() {
+		$wrapper = '{{WRAPPER}} .kdna-directory-counter';
+		$number  = '{{WRAPPER}} .kdna-directory-counter__number';
+		$label   = '{{WRAPPER}} .kdna-directory-counter__label';
+		$icon    = '{{WRAPPER}} .kdna-directory-counter__icon';
+
+		/* Container */
+		$this->start_controls_section(
+			'kdna_section_style_container',
+			array(
+				'label' => esc_html__( 'Container', 'kdna-directory-counter' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->start_controls_tabs( 'kdna_container_tabs' );
+
+		$this->start_controls_tab(
+			'kdna_container_tab_normal',
+			array( 'label' => esc_html__( 'Normal', 'kdna-directory-counter' ) )
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			array(
+				'name'     => 'container_background',
+				'types'    => array( 'classic', 'gradient' ),
+				'selector' => $wrapper,
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Box_Shadow::get_type(),
+			array(
+				'name'     => 'container_shadow',
+				'selector' => $wrapper,
+			)
+		);
+
+		$this->add_control(
+			'container_border_colour',
+			array(
+				'label'     => esc_html__( 'Border colour', 'kdna-directory-counter' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					$wrapper => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'kdna_container_tab_hover',
+			array( 'label' => esc_html__( 'Hover', 'kdna-directory-counter' ) )
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			array(
+				'name'     => 'container_background_hover',
+				'types'    => array( 'classic', 'gradient' ),
+				'selector' => $wrapper . ':hover',
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Box_Shadow::get_type(),
+			array(
+				'name'     => 'container_shadow_hover',
+				'selector' => $wrapper . ':hover',
+			)
+		);
+
+		$this->add_control(
+			'container_border_colour_hover',
+			array(
+				'label'     => esc_html__( 'Border colour', 'kdna-directory-counter' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					$wrapper . ':hover' => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
+
+		$this->add_responsive_control(
+			'container_padding',
+			array(
+				'label'      => esc_html__( 'Padding', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'default'    => array(
+					'top'      => 16,
+					'right'    => 20,
+					'bottom'   => 16,
+					'left'     => 20,
+					'unit'     => 'px',
+					'isLinked' => false,
+				),
+				'selectors'  => array(
+					$wrapper => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'container_border_style',
+			array(
+				'label'     => esc_html__( 'Border type', 'kdna-directory-counter' ),
+				'type'      => \Elementor\Controls_Manager::SELECT,
+				'default'   => 'none',
+				'options'   => array(
+					'none'   => esc_html__( 'None', 'kdna-directory-counter' ),
+					'solid'  => esc_html__( 'Solid', 'kdna-directory-counter' ),
+					'dashed' => esc_html__( 'Dashed', 'kdna-directory-counter' ),
+					'dotted' => esc_html__( 'Dotted', 'kdna-directory-counter' ),
+					'double' => esc_html__( 'Double', 'kdna-directory-counter' ),
+				),
+				'selectors' => array(
+					$wrapper => 'border-style: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'container_border_width',
+			array(
+				'label'      => esc_html__( 'Border width', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px' ),
+				'selectors'  => array(
+					$wrapper => 'border-width: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+				'condition'  => array(
+					'container_border_style!' => 'none',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'container_border_radius',
+			array(
+				'label'      => esc_html__( 'Border radius', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'default'    => array(
+					'top'      => 8,
+					'right'    => 8,
+					'bottom'   => 8,
+					'left'     => 8,
+					'unit'     => 'px',
+					'isLinked' => true,
+				),
+				'selectors'  => array(
+					$wrapper => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'container_transition',
+			array(
+				'label'      => esc_html__( 'Hover transition (seconds)', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 's' ),
+				'range'      => array(
+					's' => array(
+						'min'  => 0,
+						'max'  => 2,
+						'step' => 0.05,
+					),
+				),
+				'default'    => array(
+					'unit' => 's',
+					'size' => 0.3,
+				),
+				'selectors'  => array(
+					$wrapper          => 'transition: background {{SIZE}}{{UNIT}} ease, border-color {{SIZE}}{{UNIT}} ease, box-shadow {{SIZE}}{{UNIT}} ease, color {{SIZE}}{{UNIT}} ease;',
+					$number           => 'transition: color {{SIZE}}{{UNIT}} ease, text-shadow {{SIZE}}{{UNIT}} ease;',
+					$label            => 'transition: color {{SIZE}}{{UNIT}} ease;',
+					$icon . ' svg, ' . $icon . ' i' => 'transition: color {{SIZE}}{{UNIT}} ease, fill {{SIZE}}{{UNIT}} ease;',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+
+		/* Number */
+		$this->start_controls_section(
+			'kdna_section_style_number',
+			array(
+				'label' => esc_html__( 'Number', 'kdna-directory-counter' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'number_typography',
+				'selector' => $number,
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Text_Shadow::get_type(),
+			array(
+				'name'     => 'number_text_shadow',
+				'selector' => $number,
+			)
+		);
+
+		$this->start_controls_tabs( 'kdna_number_tabs' );
+
+		$this->start_controls_tab(
+			'kdna_number_tab_normal',
+			array( 'label' => esc_html__( 'Normal', 'kdna-directory-counter' ) )
+		);
+
+		$this->add_control(
+			'number_colour',
+			array(
+				'label'     => esc_html__( 'Colour', 'kdna-directory-counter' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					$number => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'kdna_number_tab_hover',
+			array( 'label' => esc_html__( 'Hover', 'kdna-directory-counter' ) )
+		);
+
+		$this->add_control(
+			'number_colour_hover',
+			array(
+				'label'     => esc_html__( 'Colour', 'kdna-directory-counter' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					$wrapper . ':hover ' . '.kdna-directory-counter__number' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
+
+		$this->end_controls_section();
+
+		/* Label */
+		$this->start_controls_section(
+			'kdna_section_style_label',
+			array(
+				'label' => esc_html__( 'Label', 'kdna-directory-counter' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'label_typography',
+				'selector' => $label,
+			)
+		);
+
+		$this->start_controls_tabs( 'kdna_label_tabs' );
+
+		$this->start_controls_tab(
+			'kdna_label_tab_normal',
+			array( 'label' => esc_html__( 'Normal', 'kdna-directory-counter' ) )
+		);
+
+		$this->add_control(
+			'label_colour',
+			array(
+				'label'     => esc_html__( 'Colour', 'kdna-directory-counter' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					$label => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'kdna_label_tab_hover',
+			array( 'label' => esc_html__( 'Hover', 'kdna-directory-counter' ) )
+		);
+
+		$this->add_control(
+			'label_colour_hover',
+			array(
+				'label'     => esc_html__( 'Colour', 'kdna-directory-counter' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					$wrapper . ':hover ' . '.kdna-directory-counter__label' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
+
+		$this->add_responsive_control(
+			'label_spacing',
+			array(
+				'label'      => esc_html__( 'Spacing from number', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em' ),
+				'range'      => array(
+					'px' => array(
+						'min' => 0,
+						'max' => 80,
+					),
+				),
+				'default'    => array(
+					'unit' => 'px',
+					'size' => 4,
+				),
+				'selectors'  => array(
+					$label => 'margin-top: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+
+		/* Icon */
+		$this->start_controls_section(
+			'kdna_section_style_icon',
+			array(
+				'label'     => esc_html__( 'Icon', 'kdna-directory-counter' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array(
+					'icon[value]!' => '',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'icon_size',
+			array(
+				'label'      => esc_html__( 'Size', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em' ),
+				'range'      => array(
+					'px' => array(
+						'min' => 8,
+						'max' => 200,
+					),
+				),
+				'default'    => array(
+					'unit' => 'px',
+					'size' => 24,
+				),
+				'selectors'  => array(
+					$icon . ' svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+					$icon . ' i'   => 'font-size: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->start_controls_tabs( 'kdna_icon_tabs' );
+
+		$this->start_controls_tab(
+			'kdna_icon_tab_normal',
+			array( 'label' => esc_html__( 'Normal', 'kdna-directory-counter' ) )
+		);
+
+		$this->add_control(
+			'icon_colour',
+			array(
+				'label'     => esc_html__( 'Colour', 'kdna-directory-counter' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					$icon . ' svg' => 'fill: {{VALUE}};',
+					$icon . ' i'   => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'kdna_icon_tab_hover',
+			array( 'label' => esc_html__( 'Hover', 'kdna-directory-counter' ) )
+		);
+
+		$this->add_control(
+			'icon_colour_hover',
+			array(
+				'label'     => esc_html__( 'Colour', 'kdna-directory-counter' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					$wrapper . ':hover ' . '.kdna-directory-counter__icon svg' => 'fill: {{VALUE}};',
+					$wrapper . ':hover ' . '.kdna-directory-counter__icon i'   => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
+
+		$this->add_responsive_control(
+			'icon_spacing',
+			array(
+				'label'      => esc_html__( 'Spacing from text', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em' ),
+				'range'      => array(
+					'px' => array(
+						'min' => 0,
+						'max' => 80,
+					),
+				),
+				'default'    => array(
+					'unit' => 'px',
+					'size' => 8,
+				),
+				'selectors'  => array(
+					$wrapper . '--icon-before ' . '.kdna-directory-counter__icon' => 'margin-right: {{SIZE}}{{UNIT}};',
+					$wrapper . '--icon-after ' . '.kdna-directory-counter__icon'  => 'margin-left: {{SIZE}}{{UNIT}};',
+					$wrapper . '--icon-above ' . '.kdna-directory-counter__icon'  => 'margin-bottom: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+
+		/* Alignment */
+		$this->start_controls_section(
+			'kdna_section_style_alignment',
+			array(
+				'label' => esc_html__( 'Alignment', 'kdna-directory-counter' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_responsive_control(
+			'text_alignment',
+			array(
+				'label'     => esc_html__( 'Text alignment', 'kdna-directory-counter' ),
+				'type'      => \Elementor\Controls_Manager::CHOOSE,
+				'default'   => 'center',
+				'options'   => array(
+					'left'   => array(
+						'title' => esc_html__( 'Left', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-text-align-left',
+					),
+					'center' => array(
+						'title' => esc_html__( 'Centre', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-text-align-center',
+					),
+					'right'  => array(
+						'title' => esc_html__( 'Right', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-text-align-right',
+					),
+				),
+				'toggle'    => false,
+				'selectors' => array(
+					$wrapper => 'text-align: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'layout',
+			array(
+				'label'   => esc_html__( 'Layout', 'kdna-directory-counter' ),
+				'type'    => \Elementor\Controls_Manager::CHOOSE,
+				'default' => 'stacked',
+				'options' => array(
+					'stacked' => array(
+						'title' => esc_html__( 'Number above label', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-v-align-top',
+					),
+					'inline'  => array(
+						'title' => esc_html__( 'Number beside label', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-h-align-left',
+					),
+				),
+				'toggle'    => false,
+				'selectors_dictionary' => array(
+					'stacked' => 'flex-direction: column; align-items: center;',
+					'inline'  => 'flex-direction: row; align-items: baseline; gap: 8px;',
+				),
+				'selectors' => array(
+					$wrapper . '__text' => '{{VALUE}}',
+				),
+			)
+		);
+
+		$this->end_controls_section();
 	}
 
 	/**
@@ -504,20 +1139,29 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 	 * @param array $settings Widget settings.
 	 * @return array
 	 */
-	protected function kdna_get_js_config( $settings ) {
+	protected function kdna_get_js_config( $settings, $final_count ) {
 		$target = isset( $settings['target_element_id'] ) ? sanitize_html_class( $settings['target_element_id'] ) : '';
 		$enable = ! empty( $settings['enable_absolute'] ) && 'yes' === $settings['enable_absolute'] && '' !== $target;
 
+		$animation_duration = isset( $settings['animation_duration']['size'] ) ? (float) $settings['animation_duration']['size'] : 2;
+		if ( $animation_duration <= 0 ) {
+			$animation_duration = 2;
+		}
+
 		$config = array(
-			'source'          => isset( $settings['source'] ) ? $settings['source'] : 'static',
-			'jsfQueryId'      => isset( $settings['jsf_query_id'] ) ? sanitize_text_field( $settings['jsf_query_id'] ) : '',
-			'singularLabel'   => isset( $settings['singular_label'] ) ? $settings['singular_label'] : '',
-			'pluralLabel'     => isset( $settings['plural_label'] ) ? $settings['plural_label'] : '',
-			'targetElementId' => $target,
-			'enableAbsolute'  => $enable,
-			'positionPreset'  => isset( $settings['position_preset'] ) ? $settings['position_preset'] : 'top-right',
-			'zIndex'          => isset( $settings['z_index'] ) ? (int) $settings['z_index'] : 10,
-			'offsets'         => array(
+			'source'            => isset( $settings['source'] ) ? $settings['source'] : 'static',
+			'jsfQueryId'        => isset( $settings['jsf_query_id'] ) ? sanitize_text_field( $settings['jsf_query_id'] ) : '',
+			'singularLabel'     => isset( $settings['singular_label'] ) ? $settings['singular_label'] : '',
+			'pluralLabel'       => isset( $settings['plural_label'] ) ? $settings['plural_label'] : '',
+			'finalCount'        => (int) $final_count,
+			'targetElementId'   => $target,
+			'enableAbsolute'    => $enable,
+			'positionPreset'    => isset( $settings['position_preset'] ) ? $settings['position_preset'] : 'top-right',
+			'zIndex'            => isset( $settings['z_index'] ) ? (int) $settings['z_index'] : 10,
+			'enableAnimation'   => ! empty( $settings['enable_animation'] ) && 'yes' === $settings['enable_animation'],
+			'animationDuration' => $animation_duration,
+			'animationEasing'   => isset( $settings['animation_easing'] ) ? $settings['animation_easing'] : 'easeOutExpo',
+			'offsets'           => array(
 				'vertical'   => $this->kdna_get_slider_css_value( $settings, 'vertical_offset' ),
 				'horizontal' => $this->kdna_get_slider_css_value( $settings, 'horizontal_offset' ),
 				'top'        => $this->kdna_get_slider_css_value( $settings, 'custom_top_offset' ),
@@ -558,27 +1202,51 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 	protected function render() {
 		$settings = $this->get_settings_for_display();
 
+		if ( function_exists( 'kdna_directory_counter_rendered_flag' ) ) {
+			kdna_directory_counter_rendered_flag( true );
+		}
+
 		$count          = (int) $this->kdna_get_count( $settings );
 		$singular_label = isset( $settings['singular_label'] ) ? $settings['singular_label'] : '';
 		$plural_label   = isset( $settings['plural_label'] ) ? $settings['plural_label'] : '';
 		$label          = ( 1 === $count ) ? $singular_label : $plural_label;
 
-		$config      = $this->kdna_get_js_config( $settings );
+		$config      = $this->kdna_get_js_config( $settings, $count );
 		$config_json = wp_json_encode( $config );
+
+		$icon_position = isset( $settings['icon_position'] ) ? $settings['icon_position'] : 'before';
+		$has_icon      = ! empty( $settings['icon'] ) && ! empty( $settings['icon']['value'] );
+
+		$classes = array( 'kdna-directory-counter' );
+		if ( $has_icon ) {
+			$classes[] = 'kdna-directory-counter--has-icon';
+			$classes[] = 'kdna-directory-counter--icon-' . sanitize_html_class( $icon_position );
+		}
 
 		$this->add_render_attribute(
 			'wrapper',
 			array(
-				'class'        => 'kdna-directory-counter',
+				'class'            => $classes,
 				'data-kdna-config' => $config_json,
-				'style'        => 'display:none;',
+				'style'            => 'display:none;',
 			)
 		);
 
 		?>
 		<div <?php echo $this->get_render_attribute_string( 'wrapper' ); ?>>
-			<span class="kdna-directory-counter__number"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
-			<span class="kdna-directory-counter__label"><?php echo esc_html( $label ); ?></span>
+			<?php if ( $has_icon && 'before' === $icon_position ) : ?>
+				<span class="kdna-directory-counter__icon"><?php \Elementor\Icons_Manager::render_icon( $settings['icon'], array( 'aria-hidden' => 'true' ) ); ?></span>
+			<?php endif; ?>
+			<?php if ( $has_icon && 'above' === $icon_position ) : ?>
+				<span class="kdna-directory-counter__icon"><?php \Elementor\Icons_Manager::render_icon( $settings['icon'], array( 'aria-hidden' => 'true' ) ); ?></span>
+			<?php endif; ?>
+			<span class="kdna-directory-counter__text">
+				<span class="kdna-directory-counter__number" data-kdna-final="<?php echo esc_attr( $count ); ?>"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
+				<span class="kdna-directory-counter__label"><?php echo esc_html( $label ); ?></span>
+			</span>
+			<?php if ( $has_icon && 'after' === $icon_position ) : ?>
+				<span class="kdna-directory-counter__icon"><?php \Elementor\Icons_Manager::render_icon( $settings['icon'], array( 'aria-hidden' => 'true' ) ); ?></span>
+			<?php endif; ?>
 		</div>
 		<?php
 	}

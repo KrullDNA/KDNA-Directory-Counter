@@ -3,7 +3,7 @@
  * Plugin Name: KDNA Directory Counter
  * Plugin URI:  https://krulldna.com/
  * Description: An Elementor widget that displays a styleable stats badge (e.g. "32 Offices") with full position and styling controls. Designed to overlay on a JetEngine Map Listing or sit anywhere else on the page.
- * Version:     1.1.0
+ * Version:     1.0.0
  * Author:      Krull Design & Advertising
  * Author URI:  https://krulldna.com/
  * Text Domain: kdna-directory-counter
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'KDNA_DIRECTORY_COUNTER_VERSION', '1.1.0' );
+define( 'KDNA_DIRECTORY_COUNTER_VERSION', '1.0.0' );
 define( 'KDNA_DIRECTORY_COUNTER_FILE', __FILE__ );
 define( 'KDNA_DIRECTORY_COUNTER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'KDNA_DIRECTORY_COUNTER_URL', plugin_dir_url( __FILE__ ) );
@@ -46,9 +46,17 @@ function kdna_directory_counter_register_assets() {
 	);
 
 	wp_register_script(
+		'kdna-directory-counter-countup',
+		KDNA_DIRECTORY_COUNTER_URL . 'assets/js/countup.min.js',
+		array(),
+		KDNA_DIRECTORY_COUNTER_VERSION,
+		true
+	);
+
+	wp_register_script(
 		'kdna-directory-counter',
 		KDNA_DIRECTORY_COUNTER_URL . 'assets/js/kdna-directory-counter.js',
-		array(),
+		array( 'kdna-directory-counter-countup' ),
 		KDNA_DIRECTORY_COUNTER_VERSION,
 		true
 	);
@@ -108,6 +116,36 @@ function kdna_directory_counter_ajax_get_count() {
 }
 add_action( 'wp_ajax_kdna_directory_counter_get_count', 'kdna_directory_counter_ajax_get_count' );
 add_action( 'wp_ajax_nopriv_kdna_directory_counter_get_count', 'kdna_directory_counter_ajax_get_count' );
+
+/**
+ * Render flag accessor. The widget render method calls this with true so the
+ * footer hook below knows to enqueue the assets only when a widget actually
+ * rendered on the current page request.
+ *
+ * @param bool|null $set Set the flag.
+ * @return bool
+ */
+function kdna_directory_counter_rendered_flag( $set = null ) {
+	static $rendered = false;
+	if ( true === $set ) {
+		$rendered = true;
+	}
+	return $rendered;
+}
+
+/**
+ * Enqueue plugin assets in the footer if the widget rendered on this page.
+ * Keeps CountUp.js and the front-end JS off pages that do not use the widget.
+ */
+function kdna_directory_counter_maybe_enqueue_assets() {
+	if ( ! kdna_directory_counter_rendered_flag() ) {
+		return;
+	}
+	wp_enqueue_style( 'kdna-directory-counter' );
+	wp_enqueue_script( 'kdna-directory-counter-countup' );
+	wp_enqueue_script( 'kdna-directory-counter' );
+}
+add_action( 'wp_footer', 'kdna_directory_counter_maybe_enqueue_assets', 5 );
 
 /**
  * Admin notice when Elementor is not active.

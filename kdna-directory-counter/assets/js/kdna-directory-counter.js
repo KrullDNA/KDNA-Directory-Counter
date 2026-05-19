@@ -2,8 +2,8 @@
  * KDNA Directory Counter front-end behaviour.
  *
  * Handles overlay injection into a target element, position presets,
- * Elementor editor placeholder rendering, and JetSmartFilters live
- * count updates via AJAX.
+ * Elementor editor placeholder rendering, JetSmartFilters live count
+ * updates via AJAX, and CountUp.js animation with viewport detection.
  */
 ( function () {
 	'use strict';
@@ -116,20 +116,103 @@
 		counter.style.display = '';
 	}
 
-	function updateLabel( counter, count, config ) {
-		var labelEl = counter.querySelector( '.kdna-directory-counter__label' );
+	function getNumberEl( counter ) {
+		return counter.querySelector( '.kdna-directory-counter__number' );
+	}
+
+	function getLabelEl( counter ) {
+		return counter.querySelector( '.kdna-directory-counter__label' );
+	}
+
+	function setLabel( counter, count, config ) {
+		var labelEl = getLabelEl( counter );
 		if ( ! labelEl ) {
 			return;
 		}
 		labelEl.textContent = ( 1 === count ) ? config.singularLabel : config.pluralLabel;
 	}
 
-	function updateNumber( counter, count ) {
-		var numberEl = counter.querySelector( '.kdna-directory-counter__number' );
+	function createCountUp( numberEl, endVal, config, startVal ) {
+		if ( ! window.CountUp ) {
+			numberEl.textContent = String( endVal );
+			return null;
+		}
+		return new window.CountUp( numberEl, endVal, {
+			startVal: typeof startVal === 'number' ? startVal : 0,
+			duration: config.animationDuration,
+			easingFn: config.animationEasing,
+			useEasing: true,
+			separator: ','
+		} );
+	}
+
+	function animateInitial( counter, config ) {
+		var numberEl = getNumberEl( counter );
 		if ( ! numberEl ) {
 			return;
 		}
-		numberEl.textContent = String( count );
+		var finalVal = parseInt( numberEl.getAttribute( 'data-kdna-final' ), 10 ) || config.finalCount || 0;
+
+		if ( ! config.enableAnimation ) {
+			numberEl.textContent = finalVal.toLocaleString();
+			counter._kdnaLastValue = finalVal;
+			return;
+		}
+
+		var instance = createCountUp( numberEl, finalVal, config, 0 );
+		if ( instance && ! instance.error ) {
+			instance.start();
+			counter._kdnaCountUp = instance;
+		} else {
+			numberEl.textContent = finalVal.toLocaleString();
+		}
+		counter._kdnaLastValue = finalVal;
+	}
+
+	function animateTo( counter, newVal, config ) {
+		var numberEl = getNumberEl( counter );
+		if ( ! numberEl ) {
+			return;
+		}
+
+		if ( ! config.enableAnimation ) {
+			numberEl.textContent = newVal.toLocaleString();
+			counter._kdnaLastValue = newVal;
+			return;
+		}
+
+		var prev = ( typeof counter._kdnaLastValue === 'number' ) ? counter._kdnaLastValue : 0;
+
+		if ( counter._kdnaCountUp && typeof counter._kdnaCountUp.update === 'function' ) {
+			counter._kdnaCountUp.update( newVal );
+		} else {
+			var instance = createCountUp( numberEl, newVal, config, prev );
+			if ( instance && ! instance.error ) {
+				instance.start();
+				counter._kdnaCountUp = instance;
+			} else {
+				numberEl.textContent = newVal.toLocaleString();
+			}
+		}
+		counter._kdnaLastValue = newVal;
+	}
+
+	function observeForAnimation( counter, config ) {
+		if ( ! ( 'IntersectionObserver' in window ) ) {
+			animateInitial( counter, config );
+			return;
+		}
+
+		var observer = new IntersectionObserver( function ( entries, obs ) {
+			entries.forEach( function ( entry ) {
+				if ( entry.isIntersecting ) {
+					animateInitial( counter, config );
+					obs.unobserve( entry.target );
+				}
+			} );
+		}, { threshold: 0.2 } );
+
+		observer.observe( counter );
 	}
 
 	function fetchJsfCount( config, onSuccess ) {
@@ -161,6 +244,33 @@
 		} ).catch( function () {} );
 	}
 
+	function handleJsfRender( counter, config ) {
+		if ( config.enableAbsolute && config.targetElementId ) {
+			var target = document.getElementById( config.targetElementId );
+			if ( target && ! target.contains( counter ) ) {
+				injectIntoTarget( counter, target, config );
+			}
+		}
+
+		if ( config.source === 'jsf_query' ) {
+			fetchJsfCount( config, function ( count ) {
+				animateTo( counter, count, config );
+				setLabel( counter, count, config );
+			} );
+		}
+	}
+
+	function bindJsfListener( counter, config ) {
+		var handler = function () {
+			handleJsfRender( counter, config );
+		};
+		if ( window.jQuery ) {
+			window.jQuery( window ).on( 'jet-smart-filters/render-ended', handler );
+		} else if ( document.addEventListener ) {
+			document.addEventListener( 'jet-smart-filters/render-ended', handler );
+		}
+	}
+
 	function initCounter( counter ) {
 		if ( counter.dataset.kdnaInitialised === '1' ) {
 			return;
@@ -173,9 +283,7 @@
 			return;
 		}
 
-		var editor = isEditorMode();
-
-		if ( editor ) {
+		if ( isEditorMode() ) {
 			renderEditorPlaceholder( counter, config );
 			return;
 		}
@@ -184,67 +292,28 @@
 
 		if ( ! targetId ) {
 			showInline( counter );
-			return;
-		}
-
-		var target = document.getElementById( targetId );
-
-		if ( ! target ) {
-			if ( window.console && window.console.warn ) {
-				window.console.warn( 'KDNA Directory Counter: target element #' + targetId + ' not found' );
-			}
-			return;
-		}
-
-		if ( config.enableAbsolute ) {
-			injectIntoTarget( counter, target, config );
 		} else {
-			showInline( counter );
-		}
-
-		if ( window.jQuery ) {
-			window.jQuery( window ).on( 'jet-smart-filters/render-ended', function () {
-				handleJsfRender( counter, config );
-			} );
-		} else if ( document.addEventListener ) {
-			document.addEventListener( 'jet-smart-filters/render-ended', function () {
-				handleJsfRender( counter, config );
-			} );
-		}
-	}
-
-	function handleJsfRender( counter, config ) {
-		if ( config.enableAbsolute && config.targetElementId ) {
-			var target = document.getElementById( config.targetElementId );
-			if ( target && ! target.contains( counter ) ) {
+			var target = document.getElementById( targetId );
+			if ( ! target ) {
+				if ( window.console && window.console.warn ) {
+					window.console.warn( 'KDNA Directory Counter: target element #' + targetId + ' not found' );
+				}
+				return;
+			}
+			if ( config.enableAbsolute ) {
 				injectIntoTarget( counter, target, config );
+			} else {
+				showInline( counter );
 			}
 		}
 
-		if ( config.source === 'jsf_query' ) {
-			fetchJsfCount( config, function ( count ) {
-				updateNumber( counter, count );
-				updateLabel( counter, count, config );
-			} );
-		}
+		observeForAnimation( counter, config );
+		bindJsfListener( counter, config );
 	}
 
 	function initAll() {
 		var counters = document.querySelectorAll( SELECTOR );
 		Array.prototype.forEach.call( counters, initCounter );
-
-		if ( ! initAll._jsfBound && window.jQuery ) {
-			initAll._jsfBound = true;
-			window.jQuery( window ).on( 'jet-smart-filters/render-ended', function () {
-				var nodes = document.querySelectorAll( SELECTOR );
-				Array.prototype.forEach.call( nodes, function ( c ) {
-					var cfg = getConfig( c );
-					if ( cfg ) {
-						handleJsfRender( c, cfg );
-					}
-				} );
-			} );
-		}
 	}
 
 	if ( document.readyState === 'loading' ) {
