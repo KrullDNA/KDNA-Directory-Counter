@@ -136,6 +136,244 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 		);
 
 		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'kdna_section_position',
+			array(
+				'label' => esc_html__( 'Position', 'kdna-directory-counter' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
+			)
+		);
+
+		$this->add_control(
+			'target_element_id',
+			array(
+				'label'       => esc_html__( 'Target element ID', 'kdna-directory-counter' ),
+				'type'        => \Elementor\Controls_Manager::TEXT,
+				'default'     => '',
+				'label_block' => true,
+				'description' => esc_html__( 'Enter the CSS ID of the element you want the Counter to overlay, without the # prefix. Leave empty to render the Counter inline where it sits in the page builder. To set a CSS ID on the target widget, edit it and look under Advanced > CSS ID.', 'kdna-directory-counter' ),
+			)
+		);
+
+		$this->add_control(
+			'enable_absolute',
+			array(
+				'label'        => esc_html__( 'Overlay on target', 'kdna-directory-counter' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'label_on'     => esc_html__( 'On', 'kdna-directory-counter' ),
+				'label_off'    => esc_html__( 'Off', 'kdna-directory-counter' ),
+				'return_value' => 'yes',
+				'default'      => '',
+				'description'  => esc_html__( 'Inject this Counter into the target element and overlay it. The target element will automatically be set to position: relative.', 'kdna-directory-counter' ),
+				'condition'    => array(
+					'target_element_id!' => '',
+				),
+			)
+		);
+
+		$this->add_control(
+			'position_preset',
+			array(
+				'label'   => esc_html__( 'Position preset', 'kdna-directory-counter' ),
+				'type'    => \Elementor\Controls_Manager::CHOOSE,
+				'default' => 'top-right',
+				'options' => array(
+					'top-left'     => array(
+						'title' => esc_html__( 'Top left', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-h-align-left',
+					),
+					'top-right'    => array(
+						'title' => esc_html__( 'Top right', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-h-align-right',
+					),
+					'bottom-left'  => array(
+						'title' => esc_html__( 'Bottom left', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-h-align-left',
+					),
+					'bottom-right' => array(
+						'title' => esc_html__( 'Bottom right', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-h-align-right',
+					),
+					'custom'       => array(
+						'title' => esc_html__( 'Custom', 'kdna-directory-counter' ),
+						'icon'  => 'eicon-edit',
+					),
+				),
+				'toggle'    => false,
+				'condition' => array(
+					'target_element_id!' => '',
+					'enable_absolute'    => 'yes',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'vertical_offset',
+			array(
+				'label'      => esc_html__( 'Vertical offset', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%', 'rem' ),
+				'range'      => array(
+					'px'  => array(
+						'min' => 0,
+						'max' => 500,
+					),
+					'%'   => array(
+						'min' => 0,
+						'max' => 100,
+					),
+					'rem' => array(
+						'min' => 0,
+						'max' => 30,
+					),
+				),
+				'default'    => array(
+					'unit' => 'px',
+					'size' => 20,
+				),
+				'condition'  => array(
+					'target_element_id!' => '',
+					'enable_absolute'    => 'yes',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'horizontal_offset',
+			array(
+				'label'      => esc_html__( 'Horizontal offset', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%', 'rem' ),
+				'range'      => array(
+					'px'  => array(
+						'min' => 0,
+						'max' => 500,
+					),
+					'%'   => array(
+						'min' => 0,
+						'max' => 100,
+					),
+					'rem' => array(
+						'min' => 0,
+						'max' => 30,
+					),
+				),
+				'default'    => array(
+					'unit' => 'px',
+					'size' => 20,
+				),
+				'condition'  => array(
+					'target_element_id!' => '',
+					'enable_absolute'    => 'yes',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'custom_top_offset',
+			array(
+				'label'      => esc_html__( 'Top offset', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%', 'rem' ),
+				'range'      => array(
+					'px'  => array(
+						'min' => 0,
+						'max' => 500,
+					),
+				),
+				'default'    => array(
+					'unit' => 'px',
+					'size' => 20,
+				),
+				'condition'  => array(
+					'target_element_id!' => '',
+					'enable_absolute'    => 'yes',
+					'position_preset'    => 'custom',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'custom_right_offset',
+			array(
+				'label'      => esc_html__( 'Right offset', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%', 'rem' ),
+				'range'      => array(
+					'px'  => array(
+						'min' => 0,
+						'max' => 500,
+					),
+				),
+				'default'    => array(
+					'unit' => 'px',
+					'size' => 20,
+				),
+				'condition'  => array(
+					'target_element_id!' => '',
+					'enable_absolute'    => 'yes',
+					'position_preset'    => 'custom',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'custom_bottom_offset',
+			array(
+				'label'      => esc_html__( 'Bottom offset', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%', 'rem' ),
+				'range'      => array(
+					'px'  => array(
+						'min' => 0,
+						'max' => 500,
+					),
+				),
+				'condition'  => array(
+					'target_element_id!' => '',
+					'enable_absolute'    => 'yes',
+					'position_preset'    => 'custom',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'custom_left_offset',
+			array(
+				'label'      => esc_html__( 'Left offset', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%', 'rem' ),
+				'range'      => array(
+					'px'  => array(
+						'min' => 0,
+						'max' => 500,
+					),
+				),
+				'condition'  => array(
+					'target_element_id!' => '',
+					'enable_absolute'    => 'yes',
+					'position_preset'    => 'custom',
+				),
+			)
+		);
+
+		$this->add_control(
+			'z_index',
+			array(
+				'label'     => esc_html__( 'Z-index', 'kdna-directory-counter' ),
+				'type'      => \Elementor\Controls_Manager::NUMBER,
+				'default'   => 10,
+				'min'       => 0,
+				'step'      => 1,
+				'condition' => array(
+					'target_element_id!' => '',
+					'enable_absolute'    => 'yes',
+				),
+			)
+		);
+
+		$this->end_controls_section();
 	}
 
 	/**
@@ -261,6 +499,60 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 	}
 
 	/**
+	 * Build the data-config payload consumed by the front-end JS.
+	 *
+	 * @param array $settings Widget settings.
+	 * @return array
+	 */
+	protected function kdna_get_js_config( $settings ) {
+		$target = isset( $settings['target_element_id'] ) ? sanitize_html_class( $settings['target_element_id'] ) : '';
+		$enable = ! empty( $settings['enable_absolute'] ) && 'yes' === $settings['enable_absolute'] && '' !== $target;
+
+		$config = array(
+			'source'          => isset( $settings['source'] ) ? $settings['source'] : 'static',
+			'jsfQueryId'      => isset( $settings['jsf_query_id'] ) ? sanitize_text_field( $settings['jsf_query_id'] ) : '',
+			'singularLabel'   => isset( $settings['singular_label'] ) ? $settings['singular_label'] : '',
+			'pluralLabel'     => isset( $settings['plural_label'] ) ? $settings['plural_label'] : '',
+			'targetElementId' => $target,
+			'enableAbsolute'  => $enable,
+			'positionPreset'  => isset( $settings['position_preset'] ) ? $settings['position_preset'] : 'top-right',
+			'zIndex'          => isset( $settings['z_index'] ) ? (int) $settings['z_index'] : 10,
+			'offsets'         => array(
+				'vertical'   => $this->kdna_get_slider_css_value( $settings, 'vertical_offset' ),
+				'horizontal' => $this->kdna_get_slider_css_value( $settings, 'horizontal_offset' ),
+				'top'        => $this->kdna_get_slider_css_value( $settings, 'custom_top_offset' ),
+				'right'      => $this->kdna_get_slider_css_value( $settings, 'custom_right_offset' ),
+				'bottom'     => $this->kdna_get_slider_css_value( $settings, 'custom_bottom_offset' ),
+				'left'       => $this->kdna_get_slider_css_value( $settings, 'custom_left_offset' ),
+			),
+		);
+
+		return $config;
+	}
+
+	/**
+	 * Convert an Elementor slider control value into a CSS value string.
+	 *
+	 * @param array  $settings Widget settings.
+	 * @param string $key      Control key.
+	 * @return string
+	 */
+	protected function kdna_get_slider_css_value( $settings, $key ) {
+		if ( empty( $settings[ $key ] ) || ! is_array( $settings[ $key ] ) ) {
+			return '';
+		}
+
+		$size = isset( $settings[ $key ]['size'] ) ? $settings[ $key ]['size'] : '';
+		$unit = isset( $settings[ $key ]['unit'] ) ? $settings[ $key ]['unit'] : 'px';
+
+		if ( '' === $size || null === $size ) {
+			return '';
+		}
+
+		return $size . $unit;
+	}
+
+	/**
 	 * Render the widget output on the front end.
 	 */
 	protected function render() {
@@ -271,10 +563,15 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 		$plural_label   = isset( $settings['plural_label'] ) ? $settings['plural_label'] : '';
 		$label          = ( 1 === $count ) ? $singular_label : $plural_label;
 
+		$config      = $this->kdna_get_js_config( $settings );
+		$config_json = wp_json_encode( $config );
+
 		$this->add_render_attribute(
 			'wrapper',
 			array(
-				'class' => 'kdna-directory-counter',
+				'class'        => 'kdna-directory-counter',
+				'data-kdna-config' => $config_json,
+				'style'        => 'display:none;',
 			)
 		);
 

@@ -3,7 +3,7 @@
  * Plugin Name: KDNA Directory Counter
  * Plugin URI:  https://krulldna.com/
  * Description: An Elementor widget that displays a styleable stats badge (e.g. "32 Offices") with full position and styling controls. Designed to overlay on a JetEngine Map Listing or sit anywhere else on the page.
- * Version:     1.0.0
+ * Version:     1.1.0
  * Author:      Krull Design & Advertising
  * Author URI:  https://krulldna.com/
  * Text Domain: kdna-directory-counter
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'KDNA_DIRECTORY_COUNTER_VERSION', '1.0.0' );
+define( 'KDNA_DIRECTORY_COUNTER_VERSION', '1.1.0' );
 define( 'KDNA_DIRECTORY_COUNTER_FILE', __FILE__ );
 define( 'KDNA_DIRECTORY_COUNTER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'KDNA_DIRECTORY_COUNTER_URL', plugin_dir_url( __FILE__ ) );
@@ -52,10 +52,62 @@ function kdna_directory_counter_register_assets() {
 		KDNA_DIRECTORY_COUNTER_VERSION,
 		true
 	);
+
+	wp_localize_script(
+		'kdna-directory-counter',
+		'kdnaDirectoryCounter',
+		array(
+			'ajax_url' => admin_url( 'admin-ajax.php' ),
+			'nonce'    => wp_create_nonce( 'kdna_directory_counter_get_count' ),
+		)
+	);
 }
 add_action( 'wp_enqueue_scripts', 'kdna_directory_counter_register_assets' );
 add_action( 'elementor/frontend/after_register_scripts', 'kdna_directory_counter_register_assets' );
 add_action( 'elementor/frontend/after_register_styles', 'kdna_directory_counter_register_assets' );
+
+/**
+ * AJAX handler that returns the current filtered count for a
+ * JetSmartFilters query ID. Used by the front-end JS to keep the
+ * Counter in sync with filter changes.
+ */
+function kdna_directory_counter_ajax_get_count() {
+	check_ajax_referer( 'kdna_directory_counter_get_count', 'nonce' );
+
+	$query_id = isset( $_POST['jsf_query_id'] ) ? sanitize_text_field( wp_unslash( $_POST['jsf_query_id'] ) ) : '';
+
+	if ( '' === $query_id ) {
+		wp_send_json_error( array( 'message' => 'missing_query_id' ), 400 );
+	}
+
+	$count = 0;
+
+	if ( function_exists( 'jet_smart_filters' ) ) {
+		$query_manager = jet_smart_filters()->query;
+
+		if ( is_object( $query_manager ) ) {
+			if ( method_exists( $query_manager, 'set_props' ) ) {
+				$query_manager->set_props( $query_id );
+			}
+
+			if ( method_exists( $query_manager, 'get_query' ) ) {
+				$query_object = $query_manager->get_query( $query_id );
+
+				if ( is_object( $query_object ) ) {
+					if ( method_exists( $query_object, 'get_items_total_count' ) ) {
+						$count = (int) $query_object->get_items_total_count();
+					} elseif ( property_exists( $query_object, 'items_total_count' ) ) {
+						$count = (int) $query_object->items_total_count;
+					}
+				}
+			}
+		}
+	}
+
+	wp_send_json_success( array( 'count' => $count ) );
+}
+add_action( 'wp_ajax_kdna_directory_counter_get_count', 'kdna_directory_counter_ajax_get_count' );
+add_action( 'wp_ajax_nopriv_kdna_directory_counter_get_count', 'kdna_directory_counter_ajax_get_count' );
 
 /**
  * Admin notice when Elementor is not active.

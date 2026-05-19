@@ -4,7 +4,7 @@ Tags: elementor, jetengine, directory, counter, badge
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -59,6 +59,13 @@ and 3.
 
 == Changelog ==
 
+= 1.1.0 =
+* Stage 2 release. Position section with Target Element ID, absolute overlay
+  toggle, four position presets plus Custom, responsive offsets, z-index.
+  Front-end injection behaviour with zero-flicker render, Elementor editor
+  placeholder badge, JetSmartFilters live count via AJAX with nonce
+  validation, JSF re-injection safety net on render-ended.
+
 = 1.0.0 =
 * Stage 1 release. Plugin scaffold, Elementor widget registration, Counter
   Source controls, static / CPT total / JetSmartFilters initial count sources,
@@ -66,9 +73,6 @@ and 3.
 
 == Roadmap ==
 
-* Stage 2: Position section (Target Element ID, absolute toggle, four position
-  presets, responsive offsets, z-index), overlay injection behaviour,
-  JetSmartFilters live count updates via AJAX, Elementor editor placeholder.
 * Stage 3: Count-up animation with CountUp.js and viewport detection, icon
   support, full Style tab (container, number, label, icon, alignment), hover
   states, responsive polish.
