@@ -1,0 +1,27 @@
+/**
+ * KDNA Directory Counter
+ * Bare-minimum styles for Stage 1. Full styling controls added in Stage 3.
+ *
+ * Note: Per the atomic markup requirement, all selectors target the
+ * .kdna-directory-counter wrapper directly. Do NOT add
+ * .elementor-widget-container parent selectors.
+ */
+
+.kdna-directory-counter {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	line-height: 1.2;
+}
+
+.kdna-directory-counter__number {
+	display: block;
+	font-size: 2.5rem;
+	font-weight: 700;
+}
+
+.kdna-directory-counter__label {
+	display: block;
+	font-size: 1rem;
+	font-weight: 400;
+}
