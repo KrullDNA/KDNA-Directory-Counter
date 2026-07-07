@@ -105,10 +105,11 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 		$this->add_control(
 			'jsf_query_id',
 			array(
-				'label'       => esc_html__( 'JetSmartFilters query ID', 'kdna-directory-counter' ),
+				'label'       => esc_html__( 'Listing CSS ID or JSF Query ID', 'kdna-directory-counter' ),
 				'type'        => \Elementor\Controls_Manager::TEXT,
 				'default'     => '',
-				'description' => esc_html__( 'Enter the Query ID set on the JetEngine Listing Grid or Map Listing you want this counter to track. The same ID must be set on each JetSmartFilters filter widget that targets the directory. Live updates are added in Stage 2.', 'kdna-directory-counter' ),
+				'label_block' => true,
+				'description' => esc_html__( 'Enter the CSS ID of your JetEngine Listing Grid, without the # prefix. The counter reads the number of visible .jet-listing-grid__item elements inside it after each JetSmartFilters render. If you have set a JetSmartFilters Query ID on the listing, you can enter that instead.', 'kdna-directory-counter' ),
 				'condition'   => array(
 					'source' => 'jsf_query',
 				),

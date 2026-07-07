@@ -3,13 +3,15 @@
  *
  * Handles overlay injection into a target element, position presets,
  * Elementor editor placeholder rendering, JetSmartFilters live count
- * updates via AJAX, and CountUp.js animation with viewport detection.
+ * updates via DOM item count with AJAX fallback, and CountUp.js
+ * animation with viewport detection.
  */
 ( function () {
 	'use strict';
 
 	var SELECTOR = '.kdna-directory-counter';
 	var EDITOR_BADGE_CLASS = 'kdna-directory-counter__editor-badge';
+	var ITEM_SELECTOR = '.jet-listing-grid__item';
 
 	function getConfig( counter ) {
 		var raw = counter.getAttribute( 'data-kdna-config' );
@@ -34,54 +36,73 @@
 		return !! document.body.classList.contains( 'elementor-editor-active' );
 	}
 
+	/**
+	 * Return the element that should be moved into the overlay target.
+	 * We move the entire Elementor widget wrapper so all styles compiled
+	 * against {{WRAPPER}} .kdna-directory-counter still apply after the
+	 * counter has been relocated. Falls back to the counter itself when
+	 * the wrapper cannot be found.
+	 */
+	function getWidgetWrapper( counter ) {
+		if ( counter.closest ) {
+			var wrapper = counter.closest( '.elementor-element' );
+			if ( wrapper ) {
+				return wrapper;
+			}
+		}
+		return counter;
+	}
+
 	function showInline( counter ) {
 		counter.style.display = '';
 	}
 
-	function applyPosition( counter, config ) {
-		counter.style.top = '';
-		counter.style.right = '';
-		counter.style.bottom = '';
-		counter.style.left = '';
+	function applyPosition( el, config ) {
+		el.style.top = '';
+		el.style.right = '';
+		el.style.bottom = '';
+		el.style.left = '';
 
 		var v = config.offsets.vertical || '20px';
 		var h = config.offsets.horizontal || '20px';
 
 		switch ( config.positionPreset ) {
 			case 'top-left':
-				counter.style.top = v;
-				counter.style.left = h;
+				el.style.top = v;
+				el.style.left = h;
 				break;
 			case 'top-right':
-				counter.style.top = v;
-				counter.style.right = h;
+				el.style.top = v;
+				el.style.right = h;
 				break;
 			case 'bottom-left':
-				counter.style.bottom = v;
-				counter.style.left = h;
+				el.style.bottom = v;
+				el.style.left = h;
 				break;
 			case 'bottom-right':
-				counter.style.bottom = v;
-				counter.style.right = h;
+				el.style.bottom = v;
+				el.style.right = h;
 				break;
 			case 'custom':
 				if ( config.offsets.top ) {
-					counter.style.top = config.offsets.top;
+					el.style.top = config.offsets.top;
 				}
 				if ( config.offsets.right ) {
-					counter.style.right = config.offsets.right;
+					el.style.right = config.offsets.right;
 				}
 				if ( config.offsets.bottom ) {
-					counter.style.bottom = config.offsets.bottom;
+					el.style.bottom = config.offsets.bottom;
 				}
 				if ( config.offsets.left ) {
-					counter.style.left = config.offsets.left;
+					el.style.left = config.offsets.left;
 				}
 				break;
 		}
 
-		counter.style.position = 'absolute';
-		counter.style.zIndex = String( config.zIndex || 10 );
+		el.style.position = 'absolute';
+		el.style.width = 'auto';
+		el.style.margin = '0';
+		el.style.zIndex = String( config.zIndex || 10 );
 	}
 
 	function ensureTargetPositioned( target ) {
@@ -93,10 +114,11 @@
 
 	function injectIntoTarget( counter, target, config ) {
 		ensureTargetPositioned( target );
-		if ( counter.parentNode !== target ) {
-			target.appendChild( counter );
+		var wrapper = getWidgetWrapper( counter );
+		if ( wrapper.parentNode !== target ) {
+			target.appendChild( wrapper );
 		}
-		applyPosition( counter, config );
+		applyPosition( wrapper, config );
 		counter.style.display = '';
 	}
 
@@ -132,6 +154,42 @@
 		labelEl.textContent = ( 1 === count ) ? config.singularLabel : config.pluralLabel;
 	}
 
+	/**
+	 * Return the number of visible JetEngine Listing Grid items associated
+	 * with this counter, or null if none can be found.
+	 *
+	 * Search order:
+	 *   1. Element with the ID from the JSF query / listing CSS ID field
+	 *   2. Element with the ID from the overlay target
+	 *   3. Page-wide fallback
+	 */
+	function getDomItemCount( config ) {
+		var candidates = [];
+		if ( config.jsfQueryId ) {
+			var a = document.getElementById( config.jsfQueryId );
+			if ( a ) {
+				candidates.push( a );
+			}
+		}
+		if ( config.targetElementId ) {
+			var b = document.getElementById( config.targetElementId );
+			if ( b ) {
+				candidates.push( b );
+			}
+		}
+		for ( var i = 0; i < candidates.length; i++ ) {
+			var items = candidates[ i ].querySelectorAll( ITEM_SELECTOR );
+			if ( items.length > 0 ) {
+				return items.length;
+			}
+		}
+		var globalItems = document.querySelectorAll( ITEM_SELECTOR );
+		if ( globalItems.length > 0 ) {
+			return globalItems.length;
+		}
+		return null;
+	}
+
 	function createCountUp( numberEl, endVal, config, startVal ) {
 		if ( ! window.CountUp ) {
 			numberEl.textContent = String( endVal );
@@ -152,6 +210,14 @@
 			return;
 		}
 		var finalVal = parseInt( numberEl.getAttribute( 'data-kdna-final' ), 10 ) || config.finalCount || 0;
+
+		if ( config.source === 'jsf_query' ) {
+			var domCount = getDomItemCount( config );
+			if ( typeof domCount === 'number' ) {
+				finalVal = domCount;
+				setLabel( counter, finalVal, config );
+			}
+		}
 
 		if ( ! config.enableAnimation ) {
 			numberEl.textContent = finalVal.toLocaleString();
@@ -247,12 +313,19 @@
 	function handleJsfRender( counter, config ) {
 		if ( config.enableAbsolute && config.targetElementId ) {
 			var target = document.getElementById( config.targetElementId );
-			if ( target && ! target.contains( counter ) ) {
+			var wrapper = getWidgetWrapper( counter );
+			if ( target && ! target.contains( wrapper ) ) {
 				injectIntoTarget( counter, target, config );
 			}
 		}
 
 		if ( config.source === 'jsf_query' ) {
+			var domCount = getDomItemCount( config );
+			if ( typeof domCount === 'number' ) {
+				animateTo( counter, domCount, config );
+				setLabel( counter, domCount, config );
+				return;
+			}
 			fetchJsfCount( config, function ( count ) {
 				animateTo( counter, count, config );
 				setLabel( counter, count, config );
