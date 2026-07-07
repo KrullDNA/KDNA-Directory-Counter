@@ -36,13 +36,6 @@
 		return !! document.body.classList.contains( 'elementor-editor-active' );
 	}
 
-	/**
-	 * Return the element that should be moved into the overlay target.
-	 * We move the entire Elementor widget wrapper so all styles compiled
-	 * against {{WRAPPER}} .kdna-directory-counter still apply after the
-	 * counter has been relocated. Falls back to the counter itself when
-	 * the wrapper cannot be found.
-	 */
 	function getWidgetWrapper( counter ) {
 		if ( counter.closest ) {
 			var wrapper = counter.closest( '.elementor-element' );
@@ -57,52 +50,61 @@
 		counter.style.display = '';
 	}
 
+	function setImportant( el, prop, val ) {
+		el.style.setProperty( prop, val, 'important' );
+	}
+
+	function clearPositionSides( el ) {
+		[ 'top', 'right', 'bottom', 'left' ].forEach( function ( p ) {
+			el.style.removeProperty( p );
+		} );
+	}
+
 	function applyPosition( el, config ) {
-		el.style.top = '';
-		el.style.right = '';
-		el.style.bottom = '';
-		el.style.left = '';
+		clearPositionSides( el );
 
 		var v = config.offsets.vertical || '20px';
 		var h = config.offsets.horizontal || '20px';
 
 		switch ( config.positionPreset ) {
 			case 'top-left':
-				el.style.top = v;
-				el.style.left = h;
+				setImportant( el, 'top', v );
+				setImportant( el, 'left', h );
+				setImportant( el, 'right', 'auto' );
+				setImportant( el, 'bottom', 'auto' );
 				break;
 			case 'top-right':
-				el.style.top = v;
-				el.style.right = h;
+				setImportant( el, 'top', v );
+				setImportant( el, 'right', h );
+				setImportant( el, 'left', 'auto' );
+				setImportant( el, 'bottom', 'auto' );
 				break;
 			case 'bottom-left':
-				el.style.bottom = v;
-				el.style.left = h;
+				setImportant( el, 'bottom', v );
+				setImportant( el, 'left', h );
+				setImportant( el, 'top', 'auto' );
+				setImportant( el, 'right', 'auto' );
 				break;
 			case 'bottom-right':
-				el.style.bottom = v;
-				el.style.right = h;
+				setImportant( el, 'bottom', v );
+				setImportant( el, 'right', h );
+				setImportant( el, 'top', 'auto' );
+				setImportant( el, 'left', 'auto' );
 				break;
 			case 'custom':
-				if ( config.offsets.top ) {
-					el.style.top = config.offsets.top;
-				}
-				if ( config.offsets.right ) {
-					el.style.right = config.offsets.right;
-				}
-				if ( config.offsets.bottom ) {
-					el.style.bottom = config.offsets.bottom;
-				}
-				if ( config.offsets.left ) {
-					el.style.left = config.offsets.left;
-				}
+				setImportant( el, 'top', config.offsets.top || 'auto' );
+				setImportant( el, 'right', config.offsets.right || 'auto' );
+				setImportant( el, 'bottom', config.offsets.bottom || 'auto' );
+				setImportant( el, 'left', config.offsets.left || 'auto' );
 				break;
 		}
 
-		el.style.position = 'absolute';
-		el.style.width = 'auto';
-		el.style.margin = '0';
-		el.style.zIndex = String( config.zIndex || 10 );
+		setImportant( el, 'position', 'absolute' );
+		setImportant( el, 'width', 'auto' );
+		setImportant( el, 'max-width', 'none' );
+		setImportant( el, 'min-width', '0' );
+		setImportant( el, 'margin', '0' );
+		setImportant( el, 'z-index', String( config.zIndex || 10 ) );
 	}
 
 	function ensureTargetPositioned( target ) {
@@ -123,18 +125,14 @@
 	}
 
 	function renderEditorPlaceholder( counter, config ) {
-		if ( counter.querySelector( '.' + EDITOR_BADGE_CLASS ) ) {
-			counter.style.display = '';
-			return;
+		if ( ! counter.querySelector( '.' + EDITOR_BADGE_CLASS ) ) {
+			var badge = document.createElement( 'span' );
+			badge.className = EDITOR_BADGE_CLASS;
+			badge.textContent = config.targetElementId
+				? 'Overlays #' + config.targetElementId + ' on the front end'
+				: 'Inline mode (no target)';
+			counter.insertBefore( badge, counter.firstChild );
 		}
-
-		var badge = document.createElement( 'span' );
-		badge.className = EDITOR_BADGE_CLASS;
-		badge.textContent = config.targetElementId
-			? 'Overlays #' + config.targetElementId + ' on the front end'
-			: 'Inline mode (no target)';
-
-		counter.insertBefore( badge, counter.firstChild );
 		counter.style.display = '';
 	}
 
@@ -154,15 +152,6 @@
 		labelEl.textContent = ( 1 === count ) ? config.singularLabel : config.pluralLabel;
 	}
 
-	/**
-	 * Return the number of visible JetEngine Listing Grid items associated
-	 * with this counter, or null if none can be found.
-	 *
-	 * Search order:
-	 *   1. Element with the ID from the JSF query / listing CSS ID field
-	 *   2. Element with the ID from the overlay target
-	 *   3. Page-wide fallback
-	 */
 	function getDomItemCount( config ) {
 		var candidates = [];
 		if ( config.jsfQueryId ) {
@@ -389,9 +378,37 @@
 		Array.prototype.forEach.call( counters, initCounter );
 	}
 
+	function reinitScope( $scope ) {
+		var el = ( $scope && $scope[ 0 ] ) ? $scope[ 0 ] : $scope;
+		if ( ! el || ! el.querySelector ) {
+			return;
+		}
+		var counter = el.querySelector( SELECTOR );
+		if ( ! counter ) {
+			return;
+		}
+		counter.dataset.kdnaInitialised = '';
+		initCounter( counter );
+	}
+
+	function bindElementorHook() {
+		if ( ! window.elementorFrontend || ! window.elementorFrontend.hooks ) {
+			return;
+		}
+		window.elementorFrontend.hooks.addAction( 'frontend/element_ready/kdna-directory-counter.default', reinitScope );
+	}
+
 	if ( document.readyState === 'loading' ) {
 		document.addEventListener( 'DOMContentLoaded', initAll );
 	} else {
 		initAll();
+	}
+
+	if ( window.elementorFrontend && window.elementorFrontend.hooks ) {
+		bindElementorHook();
+	} else if ( window.jQuery ) {
+		window.jQuery( window ).on( 'elementor/frontend/init', bindElementorHook );
+	} else {
+		window.addEventListener( 'elementor/frontend/init', bindElementorHook );
 	}
 }() );

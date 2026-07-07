@@ -7,6 +7,7 @@
  */
 
 .kdna-directory-counter {
+	--kdna-gap: 8px;
 	display: inline-flex;
 	flex-direction: row;
 	align-items: center;
@@ -14,11 +15,17 @@
 	border-style: none;
 	border-width: 0;
 	line-height: 1.2;
+	gap: var( --kdna-gap );
 }
 
 .kdna-directory-counter--icon-above {
 	flex-direction: column;
+}
+
+.kdna-directory-counter--layout-row {
+	flex-direction: row;
 	align-items: center;
+	gap: var( --kdna-gap );
 }
 
 .kdna-directory-counter__text {
@@ -26,6 +33,23 @@
 	flex-direction: column;
 	align-items: center;
 	min-width: 0;
+}
+
+.kdna-directory-counter--layout-stacked .kdna-directory-counter__text {
+	flex-direction: column;
+	align-items: center;
+}
+
+.kdna-directory-counter--layout-inline .kdna-directory-counter__text {
+	flex-direction: row;
+	align-items: baseline;
+	gap: var( --kdna-gap );
+}
+
+.kdna-directory-counter--layout-row .kdna-directory-counter__text {
+	flex-direction: row;
+	align-items: baseline;
+	gap: var( --kdna-gap );
 }
 
 .kdna-directory-counter__number {
