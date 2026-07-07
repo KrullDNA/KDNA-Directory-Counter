@@ -43,7 +43,7 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 	 * Disable Elementor's inner wrapper when atomic markup is active.
 	 * Keeps the rendered markup to a single wrapper div.
 	 */
-	public function has_widget_inner_wrapper() {
+	public function has_widget_inner_wrapper(): bool {
 		return ! \Elementor\Plugin::instance()->experiments->is_feature_active( 'e_optimized_markup' );
 	}
 
