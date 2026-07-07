@@ -326,11 +326,76 @@
 		var handler = function () {
 			handleJsfRender( counter, config );
 		};
+
+		var events = [
+			'jet-smart-filters/render-ended',
+			'jet-smart-filters/render/done',
+			'jet-smart-filters/pagination/change',
+			'jet-smart-filters/filters-changed',
+			'jet-smart-filters/filters/inited',
+			'jet-engine/listing-grid/after-render'
+		];
+
 		if ( window.jQuery ) {
-			window.jQuery( window ).on( 'jet-smart-filters/render-ended', handler );
-		} else if ( document.addEventListener ) {
-			document.addEventListener( 'jet-smart-filters/render-ended', handler );
+			events.forEach( function ( e ) {
+				window.jQuery( window ).on( e, handler );
+				window.jQuery( document ).on( e, handler );
+			} );
 		}
+		if ( document.addEventListener ) {
+			events.forEach( function ( e ) {
+				document.addEventListener( e, handler );
+			} );
+		}
+
+		if ( window.JetPlugins && window.JetPlugins.hooks && typeof window.JetPlugins.hooks.addAction === 'function' ) {
+			window.JetPlugins.hooks.addAction( 'jet-smart-filters/render/done', 'kdna-directory-counter', handler );
+			window.JetPlugins.hooks.addAction( 'jet-smart-filters/filters/changed', 'kdna-directory-counter', handler );
+		}
+
+		observeTargetsForChanges( counter, config, handler );
+	}
+
+	function observeTargetsForChanges( counter, config, handler ) {
+		if ( typeof window.MutationObserver !== 'function' ) {
+			return;
+		}
+
+		var candidates = [];
+		if ( config.jsfQueryId ) {
+			var a = document.getElementById( config.jsfQueryId );
+			if ( a ) {
+				candidates.push( a );
+			}
+		}
+		if ( config.targetElementId ) {
+			var b = document.getElementById( config.targetElementId );
+			if ( b ) {
+				candidates.push( b );
+			}
+		}
+		if ( ! candidates.length ) {
+			var grids = document.querySelectorAll( '.jet-listing-grid' );
+			Array.prototype.forEach.call( grids, function ( g ) {
+				candidates.push( g );
+			} );
+		}
+		if ( ! candidates.length ) {
+			return;
+		}
+
+		var debounceTimer;
+		var observer = new MutationObserver( function () {
+			window.clearTimeout( debounceTimer );
+			debounceTimer = window.setTimeout( handler, 150 );
+		} );
+
+		candidates.forEach( function ( el ) {
+			observer.observe( el, {
+				childList: true,
+				subtree: true
+			} );
+		} );
 	}
 
 	function initCounter( counter ) {
