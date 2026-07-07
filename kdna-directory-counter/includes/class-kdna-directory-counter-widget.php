@@ -36,14 +36,14 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 	}
 
 	public function get_script_depends() {
-		return array( 'kdna-directory-counter' );
+		return array( 'kdna-directory-counter-countup', 'kdna-directory-counter' );
 	}
 
 	/**
 	 * Disable Elementor's inner wrapper when atomic markup is active.
 	 * Keeps the rendered markup to a single wrapper div.
 	 */
-	public function has_widget_inner_wrapper() {
+	public function has_widget_inner_wrapper(): bool {
 		return ! \Elementor\Plugin::instance()->experiments->is_feature_active( 'e_optimized_markup' );
 	}
 
@@ -105,10 +105,11 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 		$this->add_control(
 			'jsf_query_id',
 			array(
-				'label'       => esc_html__( 'JetSmartFilters query ID', 'kdna-directory-counter' ),
+				'label'       => esc_html__( 'Listing CSS ID or JSF Query ID', 'kdna-directory-counter' ),
 				'type'        => \Elementor\Controls_Manager::TEXT,
 				'default'     => '',
-				'description' => esc_html__( 'Enter the Query ID set on the JetEngine Listing Grid or Map Listing you want this counter to track. The same ID must be set on each JetSmartFilters filter widget that targets the directory. Live updates are added in Stage 2.', 'kdna-directory-counter' ),
+				'label_block' => true,
+				'description' => esc_html__( 'Enter the CSS ID of your JetEngine Listing Grid, without the # prefix. The counter reads the number of visible .jet-listing-grid__item elements inside it after each JetSmartFilters render. If you have set a JetSmartFilters Query ID on the listing, you can enter that instead.', 'kdna-directory-counter' ),
 				'condition'   => array(
 					'source' => 'jsf_query',
 				),
@@ -985,25 +986,38 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 			'layout',
 			array(
 				'label'   => esc_html__( 'Layout', 'kdna-directory-counter' ),
-				'type'    => \Elementor\Controls_Manager::CHOOSE,
+				'type'    => \Elementor\Controls_Manager::SELECT,
 				'default' => 'stacked',
 				'options' => array(
-					'stacked' => array(
-						'title' => esc_html__( 'Number above label', 'kdna-directory-counter' ),
-						'icon'  => 'eicon-v-align-top',
-					),
-					'inline'  => array(
-						'title' => esc_html__( 'Number beside label', 'kdna-directory-counter' ),
-						'icon'  => 'eicon-h-align-left',
+					'stacked' => esc_html__( 'Number above label', 'kdna-directory-counter' ),
+					'inline'  => esc_html__( 'Number beside label', 'kdna-directory-counter' ),
+					'row'     => esc_html__( 'Icon, number and label all in a row', 'kdna-directory-counter' ),
+				),
+				'description' => esc_html__( 'Choose how the number, label, and (optional) icon line up. "All in a row" also forces the outer wrapper to run horizontally, so pair it with icon position Before or After.', 'kdna-directory-counter' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'row_gap',
+			array(
+				'label'      => esc_html__( 'Row gap', 'kdna-directory-counter' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em' ),
+				'range'      => array(
+					'px' => array(
+						'min' => 0,
+						'max' => 60,
 					),
 				),
-				'toggle'    => false,
-				'selectors_dictionary' => array(
-					'stacked' => 'flex-direction: column; align-items: center;',
-					'inline'  => 'flex-direction: row; align-items: baseline; gap: 8px;',
+				'default'    => array(
+					'unit' => 'px',
+					'size' => 8,
 				),
-				'selectors' => array(
-					$wrapper . '__text' => '{{VALUE}}',
+				'selectors'  => array(
+					$wrapper => '--kdna-gap: {{SIZE}}{{UNIT}};',
+				),
+				'condition'  => array(
+					'layout' => array( 'inline', 'row' ),
 				),
 			)
 		);
@@ -1202,10 +1216,6 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 	protected function render() {
 		$settings = $this->get_settings_for_display();
 
-		if ( function_exists( 'kdna_directory_counter_rendered_flag' ) ) {
-			kdna_directory_counter_rendered_flag( true );
-		}
-
 		$count          = (int) $this->kdna_get_count( $settings );
 		$singular_label = isset( $settings['singular_label'] ) ? $settings['singular_label'] : '';
 		$plural_label   = isset( $settings['plural_label'] ) ? $settings['plural_label'] : '';
@@ -1216,21 +1226,26 @@ class KDNA_Directory_Counter_Widget extends \Elementor\Widget_Base {
 
 		$icon_position = isset( $settings['icon_position'] ) ? $settings['icon_position'] : 'before';
 		$has_icon      = ! empty( $settings['icon'] ) && ! empty( $settings['icon']['value'] );
+		$layout        = isset( $settings['layout'] ) ? $settings['layout'] : 'stacked';
 
 		$classes = array( 'kdna-directory-counter' );
+		$classes[] = 'kdna-directory-counter--layout-' . sanitize_html_class( $layout );
 		if ( $has_icon ) {
 			$classes[] = 'kdna-directory-counter--has-icon';
 			$classes[] = 'kdna-directory-counter--icon-' . sanitize_html_class( $icon_position );
 		}
 
-		$this->add_render_attribute(
-			'wrapper',
-			array(
-				'class'            => $classes,
-				'data-kdna-config' => $config_json,
-				'style'            => 'display:none;',
-			)
+		$is_editor = function_exists( 'kdna_directory_counter_is_elementor_edit' ) && kdna_directory_counter_is_elementor_edit();
+
+		$attrs = array(
+			'class'            => $classes,
+			'data-kdna-config' => $config_json,
 		);
+		if ( ! $is_editor ) {
+			$attrs['style'] = 'display:none;';
+		}
+
+		$this->add_render_attribute( 'wrapper', $attrs );
 
 		?>
 		<div <?php echo $this->get_render_attribute_string( 'wrapper' ); ?>>

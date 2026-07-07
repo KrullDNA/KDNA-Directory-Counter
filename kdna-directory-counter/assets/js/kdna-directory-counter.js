@@ -3,13 +3,15 @@
  *
  * Handles overlay injection into a target element, position presets,
  * Elementor editor placeholder rendering, JetSmartFilters live count
- * updates via AJAX, and CountUp.js animation with viewport detection.
+ * updates via DOM item count with AJAX fallback, and CountUp.js
+ * animation with viewport detection.
  */
 ( function () {
 	'use strict';
 
 	var SELECTOR = '.kdna-directory-counter';
 	var EDITOR_BADGE_CLASS = 'kdna-directory-counter__editor-badge';
+	var ITEM_SELECTOR = '.jet-listing-grid__item';
 
 	function getConfig( counter ) {
 		var raw = counter.getAttribute( 'data-kdna-config' );
@@ -34,54 +36,75 @@
 		return !! document.body.classList.contains( 'elementor-editor-active' );
 	}
 
+	function getWidgetWrapper( counter ) {
+		if ( counter.closest ) {
+			var wrapper = counter.closest( '.elementor-element' );
+			if ( wrapper ) {
+				return wrapper;
+			}
+		}
+		return counter;
+	}
+
 	function showInline( counter ) {
 		counter.style.display = '';
 	}
 
-	function applyPosition( counter, config ) {
-		counter.style.top = '';
-		counter.style.right = '';
-		counter.style.bottom = '';
-		counter.style.left = '';
+	function setImportant( el, prop, val ) {
+		el.style.setProperty( prop, val, 'important' );
+	}
+
+	function clearPositionSides( el ) {
+		[ 'top', 'right', 'bottom', 'left' ].forEach( function ( p ) {
+			el.style.removeProperty( p );
+		} );
+	}
+
+	function applyPosition( el, config ) {
+		clearPositionSides( el );
 
 		var v = config.offsets.vertical || '20px';
 		var h = config.offsets.horizontal || '20px';
 
 		switch ( config.positionPreset ) {
 			case 'top-left':
-				counter.style.top = v;
-				counter.style.left = h;
+				setImportant( el, 'top', v );
+				setImportant( el, 'left', h );
+				setImportant( el, 'right', 'auto' );
+				setImportant( el, 'bottom', 'auto' );
 				break;
 			case 'top-right':
-				counter.style.top = v;
-				counter.style.right = h;
+				setImportant( el, 'top', v );
+				setImportant( el, 'right', h );
+				setImportant( el, 'left', 'auto' );
+				setImportant( el, 'bottom', 'auto' );
 				break;
 			case 'bottom-left':
-				counter.style.bottom = v;
-				counter.style.left = h;
+				setImportant( el, 'bottom', v );
+				setImportant( el, 'left', h );
+				setImportant( el, 'top', 'auto' );
+				setImportant( el, 'right', 'auto' );
 				break;
 			case 'bottom-right':
-				counter.style.bottom = v;
-				counter.style.right = h;
+				setImportant( el, 'bottom', v );
+				setImportant( el, 'right', h );
+				setImportant( el, 'top', 'auto' );
+				setImportant( el, 'left', 'auto' );
 				break;
 			case 'custom':
-				if ( config.offsets.top ) {
-					counter.style.top = config.offsets.top;
-				}
-				if ( config.offsets.right ) {
-					counter.style.right = config.offsets.right;
-				}
-				if ( config.offsets.bottom ) {
-					counter.style.bottom = config.offsets.bottom;
-				}
-				if ( config.offsets.left ) {
-					counter.style.left = config.offsets.left;
-				}
+				setImportant( el, 'top', config.offsets.top || 'auto' );
+				setImportant( el, 'right', config.offsets.right || 'auto' );
+				setImportant( el, 'bottom', config.offsets.bottom || 'auto' );
+				setImportant( el, 'left', config.offsets.left || 'auto' );
 				break;
 		}
 
-		counter.style.position = 'absolute';
-		counter.style.zIndex = String( config.zIndex || 10 );
+		setImportant( el, 'position', 'absolute' );
+		setImportant( el, 'width', 'auto' );
+		setImportant( el, 'max-width', 'none' );
+		setImportant( el, 'min-width', '0' );
+		setImportant( el, 'margin', '0' );
+		setImportant( el, 'z-index', String( config.zIndex || 10 ) );
 	}
 
 	function ensureTargetPositioned( target ) {
@@ -93,26 +116,23 @@
 
 	function injectIntoTarget( counter, target, config ) {
 		ensureTargetPositioned( target );
-		if ( counter.parentNode !== target ) {
-			target.appendChild( counter );
+		var wrapper = getWidgetWrapper( counter );
+		if ( wrapper.parentNode !== target ) {
+			target.appendChild( wrapper );
 		}
-		applyPosition( counter, config );
+		applyPosition( wrapper, config );
 		counter.style.display = '';
 	}
 
 	function renderEditorPlaceholder( counter, config ) {
-		if ( counter.querySelector( '.' + EDITOR_BADGE_CLASS ) ) {
-			counter.style.display = '';
-			return;
+		if ( ! counter.querySelector( '.' + EDITOR_BADGE_CLASS ) ) {
+			var badge = document.createElement( 'span' );
+			badge.className = EDITOR_BADGE_CLASS;
+			badge.textContent = config.targetElementId
+				? 'Overlays #' + config.targetElementId + ' on the front end'
+				: 'Inline mode (no target)';
+			counter.insertBefore( badge, counter.firstChild );
 		}
-
-		var badge = document.createElement( 'span' );
-		badge.className = EDITOR_BADGE_CLASS;
-		badge.textContent = config.targetElementId
-			? 'Overlays #' + config.targetElementId + ' on the front end'
-			: 'Inline mode (no target)';
-
-		counter.insertBefore( badge, counter.firstChild );
 		counter.style.display = '';
 	}
 
@@ -130,6 +150,33 @@
 			return;
 		}
 		labelEl.textContent = ( 1 === count ) ? config.singularLabel : config.pluralLabel;
+	}
+
+	function getDomItemCount( config ) {
+		var candidates = [];
+		if ( config.jsfQueryId ) {
+			var a = document.getElementById( config.jsfQueryId );
+			if ( a ) {
+				candidates.push( a );
+			}
+		}
+		if ( config.targetElementId ) {
+			var b = document.getElementById( config.targetElementId );
+			if ( b ) {
+				candidates.push( b );
+			}
+		}
+		for ( var i = 0; i < candidates.length; i++ ) {
+			var items = candidates[ i ].querySelectorAll( ITEM_SELECTOR );
+			if ( items.length > 0 ) {
+				return items.length;
+			}
+		}
+		var globalItems = document.querySelectorAll( ITEM_SELECTOR );
+		if ( globalItems.length > 0 ) {
+			return globalItems.length;
+		}
+		return null;
 	}
 
 	function createCountUp( numberEl, endVal, config, startVal ) {
@@ -152,6 +199,14 @@
 			return;
 		}
 		var finalVal = parseInt( numberEl.getAttribute( 'data-kdna-final' ), 10 ) || config.finalCount || 0;
+
+		if ( config.source === 'jsf_query' ) {
+			var domCount = getDomItemCount( config );
+			if ( typeof domCount === 'number' ) {
+				finalVal = domCount;
+				setLabel( counter, finalVal, config );
+			}
+		}
 
 		if ( ! config.enableAnimation ) {
 			numberEl.textContent = finalVal.toLocaleString();
@@ -247,12 +302,19 @@
 	function handleJsfRender( counter, config ) {
 		if ( config.enableAbsolute && config.targetElementId ) {
 			var target = document.getElementById( config.targetElementId );
-			if ( target && ! target.contains( counter ) ) {
+			var wrapper = getWidgetWrapper( counter );
+			if ( target && ! target.contains( wrapper ) ) {
 				injectIntoTarget( counter, target, config );
 			}
 		}
 
 		if ( config.source === 'jsf_query' ) {
+			var domCount = getDomItemCount( config );
+			if ( typeof domCount === 'number' ) {
+				animateTo( counter, domCount, config );
+				setLabel( counter, domCount, config );
+				return;
+			}
 			fetchJsfCount( config, function ( count ) {
 				animateTo( counter, count, config );
 				setLabel( counter, count, config );
@@ -264,11 +326,76 @@
 		var handler = function () {
 			handleJsfRender( counter, config );
 		};
+
+		var events = [
+			'jet-smart-filters/render-ended',
+			'jet-smart-filters/render/done',
+			'jet-smart-filters/pagination/change',
+			'jet-smart-filters/filters-changed',
+			'jet-smart-filters/filters/inited',
+			'jet-engine/listing-grid/after-render'
+		];
+
 		if ( window.jQuery ) {
-			window.jQuery( window ).on( 'jet-smart-filters/render-ended', handler );
-		} else if ( document.addEventListener ) {
-			document.addEventListener( 'jet-smart-filters/render-ended', handler );
+			events.forEach( function ( e ) {
+				window.jQuery( window ).on( e, handler );
+				window.jQuery( document ).on( e, handler );
+			} );
 		}
+		if ( document.addEventListener ) {
+			events.forEach( function ( e ) {
+				document.addEventListener( e, handler );
+			} );
+		}
+
+		if ( window.JetPlugins && window.JetPlugins.hooks && typeof window.JetPlugins.hooks.addAction === 'function' ) {
+			window.JetPlugins.hooks.addAction( 'jet-smart-filters/render/done', 'kdna-directory-counter', handler );
+			window.JetPlugins.hooks.addAction( 'jet-smart-filters/filters/changed', 'kdna-directory-counter', handler );
+		}
+
+		observeTargetsForChanges( counter, config, handler );
+	}
+
+	function observeTargetsForChanges( counter, config, handler ) {
+		if ( typeof window.MutationObserver !== 'function' ) {
+			return;
+		}
+
+		var candidates = [];
+		if ( config.jsfQueryId ) {
+			var a = document.getElementById( config.jsfQueryId );
+			if ( a ) {
+				candidates.push( a );
+			}
+		}
+		if ( config.targetElementId ) {
+			var b = document.getElementById( config.targetElementId );
+			if ( b ) {
+				candidates.push( b );
+			}
+		}
+		if ( ! candidates.length ) {
+			var grids = document.querySelectorAll( '.jet-listing-grid' );
+			Array.prototype.forEach.call( grids, function ( g ) {
+				candidates.push( g );
+			} );
+		}
+		if ( ! candidates.length ) {
+			return;
+		}
+
+		var debounceTimer;
+		var observer = new MutationObserver( function () {
+			window.clearTimeout( debounceTimer );
+			debounceTimer = window.setTimeout( handler, 150 );
+		} );
+
+		candidates.forEach( function ( el ) {
+			observer.observe( el, {
+				childList: true,
+				subtree: true
+			} );
+		} );
 	}
 
 	function initCounter( counter ) {
@@ -316,9 +443,37 @@
 		Array.prototype.forEach.call( counters, initCounter );
 	}
 
+	function reinitScope( $scope ) {
+		var el = ( $scope && $scope[ 0 ] ) ? $scope[ 0 ] : $scope;
+		if ( ! el || ! el.querySelector ) {
+			return;
+		}
+		var counter = el.querySelector( SELECTOR );
+		if ( ! counter ) {
+			return;
+		}
+		counter.dataset.kdnaInitialised = '';
+		initCounter( counter );
+	}
+
+	function bindElementorHook() {
+		if ( ! window.elementorFrontend || ! window.elementorFrontend.hooks ) {
+			return;
+		}
+		window.elementorFrontend.hooks.addAction( 'frontend/element_ready/kdna-directory-counter.default', reinitScope );
+	}
+
 	if ( document.readyState === 'loading' ) {
 		document.addEventListener( 'DOMContentLoaded', initAll );
 	} else {
 		initAll();
+	}
+
+	if ( window.elementorFrontend && window.elementorFrontend.hooks ) {
+		bindElementorHook();
+	} else if ( window.jQuery ) {
+		window.jQuery( window ).on( 'elementor/frontend/init', bindElementorHook );
+	} else {
+		window.addEventListener( 'elementor/frontend/init', bindElementorHook );
 	}
 }() );

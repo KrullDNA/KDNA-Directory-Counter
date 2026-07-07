@@ -118,34 +118,25 @@ add_action( 'wp_ajax_kdna_directory_counter_get_count', 'kdna_directory_counter_
 add_action( 'wp_ajax_nopriv_kdna_directory_counter_get_count', 'kdna_directory_counter_ajax_get_count' );
 
 /**
- * Render flag accessor. The widget render method calls this with true so the
- * footer hook below knows to enqueue the assets only when a widget actually
- * rendered on the current page request.
+ * Detect whether the current request is being rendered inside the Elementor
+ * editor or preview iframe. Used by the widget render to avoid emitting
+ * display:none in editor mode.
  *
- * @param bool|null $set Set the flag.
  * @return bool
  */
-function kdna_directory_counter_rendered_flag( $set = null ) {
-	static $rendered = false;
-	if ( true === $set ) {
-		$rendered = true;
+function kdna_directory_counter_is_elementor_edit() {
+	if ( ! class_exists( '\Elementor\Plugin' ) ) {
+		return false;
 	}
-	return $rendered;
-}
-
-/**
- * Enqueue plugin assets in the footer if the widget rendered on this page.
- * Keeps CountUp.js and the front-end JS off pages that do not use the widget.
- */
-function kdna_directory_counter_maybe_enqueue_assets() {
-	if ( ! kdna_directory_counter_rendered_flag() ) {
-		return;
+	$plugin = \Elementor\Plugin::instance();
+	if ( ! empty( $plugin->editor ) && method_exists( $plugin->editor, 'is_edit_mode' ) && $plugin->editor->is_edit_mode() ) {
+		return true;
 	}
-	wp_enqueue_style( 'kdna-directory-counter' );
-	wp_enqueue_script( 'kdna-directory-counter-countup' );
-	wp_enqueue_script( 'kdna-directory-counter' );
+	if ( ! empty( $plugin->preview ) && method_exists( $plugin->preview, 'is_preview_mode' ) && $plugin->preview->is_preview_mode() ) {
+		return true;
+	}
+	return false;
 }
-add_action( 'wp_footer', 'kdna_directory_counter_maybe_enqueue_assets', 5 );
 
 /**
  * Admin notice when Elementor is not active.
